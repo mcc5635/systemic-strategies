@@ -1,0 +1,23 @@
+########################################
+###   Coinbase Perpetual configuration
+########################################
+
+template_version: 3
+exchange: coinbase_perpetual
+
+# Your Coinbase API key
+coinbase_perpetual_api_key: "organizations/ebb4a385-0f59-47d3-941d-fed86e26838c/apiKeys/b6771f53-3cc6-4933-89ca-ecf1e843a5de"
+
+# Your Coinbase API secret
+coinbase_perpetual_api_secret: |
+  -----BEGIN EC PRIVATE KEY-----
+  MHcCAQEEINk+bEzHHAGfQwBqZo/NrJ0rQUwiVUX3lNUxOq6KpLs/oAoGCCqGSM49
+  AwEHoUQDQgAE+4TXgx6igMGtdxY0nYJLLZ2ZVVAgYjMPihYMqxrsQuV8AzoFGZgD
+  X3Q2wMBM5B8gr660IuHmn2unmQmFOzjqZQ==
+  -----END EC PRIVATE KEY-----
+
+# Your Coinbase passphrase
+coinbase_perpetual_passphrase: "testpassphrase"
+
+# Whether to use the testnet
+use_testnet: false 
