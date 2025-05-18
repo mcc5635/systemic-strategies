@@ -7,10 +7,14 @@ import requests
 import numpy as np
 import os
 
-class BTCPerpetualsEnv:
+class SOLUSDCEnv:
     """
-    Environment and data handling for BTC Perpetuals strategy.
+    Environment for SOL/USDC strategy.
+    Handles data loading and preprocessing.
     """
+    def __init__(self):
+        pass
+
     def load_data(self, source: str):
         """Placeholder for loading data from a given source."""
         pass
@@ -41,8 +45,11 @@ class BTCPerpetualsEnv:
         interval = 60  # 1 minute in seconds
         all_candles = []
         batch_start = start
+        total = end - start
         while batch_start < end:
             batch_end = min(batch_start + interval * MAX_CANDLES, end)
+            percent = 100 * (batch_start - start) / total if total > 0 else 0
+            print(f"[PROGRESS] Fetching: {datetime.utcfromtimestamp(batch_start).strftime('%Y-%m-%d %H:%M:%S')} ({percent:.2f}% complete)")
             print(f"[DEBUG] Requesting candles from API with params: product_id={product_id}, start={batch_start}, end={batch_end}, granularity=ONE_MINUTE")
             try:
                 candles_response = client.get_public_candles(
@@ -314,8 +321,89 @@ class BTCPerpetualsEnv:
         df = df.set_index('timestamp').resample('1min').sum().fillna(0).reset_index()
         return df[['timestamp', 'net_flow']]
 
+    @staticmethod
+    def print_raydium_markets():
+        """
+        Fetch and print available Raydium markets and their info (including market ID, name, and possibly active periods).
+        """
+        import requests
+        try:
+            resp = requests.get("https://api.raydium.io/v2/main/pairs")
+            resp.raise_for_status()
+            pairs = resp.json()
+            print("Available Raydium Markets:")
+            for pair in pairs:
+                name = pair.get('name', 'N/A')
+                market_id = pair.get('market', 'N/A')
+                base = pair.get('base', 'N/A')
+                quote = pair.get('quote', 'N/A')
+                # Raydium does not provide active periods, but we print all info
+                print(f"  {name}: {base}/{quote} | Market ID: {market_id}")
+        except Exception as e:
+            print(f"[ERROR] Could not fetch Raydium markets: {e}")
+
+    def load_ohlcv_from_geckoterminal(self, start, end, pool_address=None, timeframe=None):
+        """
+        Try multiple timeframes for GeckoTerminal OHLCV. Print full error response if 400 error. Use first successful result.
+        """
+        import requests
+        import pandas as pd
+        import time
+        now = int(time.time())
+        if start > now or end > now:
+            print(f"[WARN] Requested date range includes future timestamps. Now: {now}, Start: {start}, End: {end}")
+        default_pool_address = '58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2'  # fallback
+        if pool_address is None:
+            pool_address = default_pool_address
+        print(f"[INFO] Using GeckoTerminal Raydium pool address: {pool_address}")
+        timeframes = ['hour', 'day', 'minute'] if timeframe is None else [timeframe]
+        params = {'from': start, 'to': end}
+        headers = {'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+        for tf in timeframes:
+            url = f"https://api.geckoterminal.com/api/v2/networks/solana/pools/{pool_address}/ohlcv/{tf}"
+            print(f"[DEBUG] GeckoTerminal request URL: {url}")
+            print(f"[DEBUG] GeckoTerminal request params: {params}")
+            try:
+                resp = requests.get(url, headers=headers, params=params)
+                print(f"[DEBUG] GeckoTerminal raw response: {resp.text}")
+                if resp.status_code == 400:
+                    print(f"[ERROR] 400 Bad Request. Response: {resp.text}")
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                if (
+                    isinstance(data.get('data'), dict) and
+                    'attributes' in data['data'] and
+                    'ohlcv_list' in data['data']['attributes']
+                ):
+                    ohlcv_list = data['data']['attributes']['ohlcv_list']
+                    ohlcv_data = []
+                    for entry in ohlcv_list:
+                        ohlcv_data.append({
+                            'timestamp': pd.to_datetime(entry[0], unit='s'),
+                            'open': float(entry[1]),
+                            'high': float(entry[2]),
+                            'low': float(entry[3]),
+                            'close': float(entry[4]),
+                            'volume': float(entry[5])
+                        })
+                    df = pd.DataFrame(ohlcv_data)
+                    print(f"[INFO] Successfully parsed GeckoTerminal ohlcv_list for {tf} with {len(df)} rows.")
+                    return df[["timestamp","open","high","low","close","volume"]]
+                else:
+                    print(f"[ERROR] Unexpected data format: {data}")
+                    continue
+            except Exception as e:
+                print(f"[ERROR] Exception fetching OHLCV from GeckoTerminal ({tf}): {e}")
+                continue
+        print("[ERROR] All timeframes failed for GeckoTerminal OHLCV.")
+        return pd.DataFrame(columns=["timestamp","open","high","low","close","volume"])
+
+    # Replace the Raydium loader with GeckoTerminal loader for OHLCV
+    load_ohlcv_from_raydium = load_ohlcv_from_geckoterminal
+
 if __name__ == '__main__':
-    env = BTCPerpetualsEnv()
+    env = SOLUSDCEnv()
     # Coinbase API: max 300 candles, 1m granularity = 5h window, both times in past, 5s cushion
     SPAN = 60 * 300  # 5 hours in seconds
     end = int(time.time()) - 5  # 5-second cushion to ensure not in future
@@ -323,6 +411,13 @@ if __name__ == '__main__':
     df = env.load_ohlcv_from_coinbase(start, end)
     print(df.head())
     print(df.tail())
+    
+    # Test GeckoTerminal OHLCV loader (Raydium pool)
+    df_gt = env.load_ohlcv_from_geckoterminal(start, end)
+    print("[GeckoTerminal OHLCV] Head:")
+    print(df_gt.head())
+    print("[GeckoTerminal OHLCV] Tail:")
+    print(df_gt.tail())
     # Test funding rate fetch from Binance
     funding_df = env.load_funding_rate_from_binance(start, end)
     print(funding_df.head())

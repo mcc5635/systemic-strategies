@@ -7,6 +7,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
+# --- Data Source Switch ---
+DATA_SOURCE = 'coinbase'  # Options: 'coinbase', 'raydium'
+
 class BTCPerpetualsSystem:
     """
     System-level orchestration for BTC Perpetuals strategy.
@@ -19,15 +22,25 @@ class BTCPerpetualsSystem:
         os.makedirs(self.log_dir, exist_ok=True)
         self.log_path = os.path.join(self.log_dir, "monitor.csv")
 
-    def run_all(self, start: str, end: str):
+    def run_all(self, start: int, end: int):
         """
-        Run the full system with real Coinbase OHLCV data for a given date range.
+        Run the full system with real OHLCV data for a given date range.
         Logs results to CSV and plots metrics after the run.
         """
-        # Load real OHLCV data
-        print(f"Loading OHLCV data from {start} to {end}...")
-        df = self.env.load_ohlcv_from_coinbase(start, end, granularity=60)
-        print(f"Loaded {len(df)} bars.")
+        print(f"[INFO] Using data source: {DATA_SOURCE}")
+        # Load OHLCV data
+        if DATA_SOURCE == 'coinbase':
+            print(f"Loading OHLCV data from {start} to {end} (Coinbase)...")
+            df = self.env.load_ohlcv_from_coinbase(start, end)
+            print(f"Loaded {len(df)} bars.")
+            # Placeholders for OI, CVD, etc. (Coinbase does not provide these directly)
+            # You can add Binance or other sources here if needed
+        else:  # Raydium
+            print(f"Loading OHLCV data from {start} to {end} (Raydium)...")
+            df = self.env.load_ohlcv_from_raydium(start, end)
+            print(f"Loaded {len(df)} bars.")
+            # Placeholders for OI, CVD, etc. (Raydium does not provide these directly)
+            # You can add Solana analytics or other sources here if needed
         # Prepare data for backtest
         prices = df['close'].tolist()
         volumes = df['volume'].tolist()
@@ -174,8 +187,10 @@ class BTCPerpetualsSystem:
         plt.show()
 
 if __name__ == '__main__':
-    # Use backtest range from white paper: 2018-01-01 to 2025-05-31
-    start = '2018-01-01T00:00:00Z'
-    end = '2025-05-31T00:00:00Z'
+    # Use a valid historical backtest range for BTC-USD: 2024-03-01 to 2024-03-02
+    def iso_to_unix(iso_str):
+        return int(datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ").timestamp())
+    start = iso_to_unix('2024-03-01T00:00:00Z')
+    end = iso_to_unix('2024-03-02T00:00:00Z')
     system = BTCPerpetualsSystem()
     system.run_all(start, end) 

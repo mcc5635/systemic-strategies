@@ -1,11 +1,11 @@
-# BTC Perpetuals Strategy Module
+# SOL/USDC Strategy Module
 
-This module implements the **HYPE BTC-PERP: Volatility-Filtered EMA Trend Strategy with GARCH-Driven Regimes & Exchange Microstructure Signals** as described in the BTC_Perpetuals.pdf white paper. It is a modular, production-grade trend-following system for Bitcoin perpetual futures, integrating on-chain analytics, exchange microstructure, and dynamic volatility estimation.
+This module implements the **SOL/USDC: Volatility-Filtered EMA Trend Strategy with GARCH-Driven Regimes & Exchange Microstructure Signals** as described in the SOL_USDC.pdf white paper. It is a modular, production-grade trend-following system for Solana perpetual futures, integrating on-chain analytics, exchange microstructure, and dynamic volatility estimation.
 
 ## Documentation Structure
 
 ```
-btc_perpetuals/README.md
+sol_usdc/README.md
 ├── Agents Overview
 │   ├── EMACalculator
 │   ├── VWAPCalculator
@@ -39,7 +39,7 @@ btc_perpetuals/README.md
 │   └── Dependencies
 │
 └── Configuration
-    ├── BTCPerpetualsConfig
+    ├── SOLUSDCConfig
     ├── Core Components
     ├── Risk Metrics
     └── Performance Tracking
@@ -47,13 +47,13 @@ btc_perpetuals/README.md
 
 ## Abstract
 
-**HYPE BTC-PERP** is an advanced trend-following strategy for BTC perpetuals that fuses EMA/VWAP trend filters, on-chain net-flow analytics, exchange microstructure metrics (CVD, OI), and dynamic volatility regime estimation via GARCH(1,1). The system features robust data cleaning, execution cost modeling, and risk controls. Backtests from 2018–2025 show superior risk-adjusted returns versus a baseline EMA crossover.
+**HYPE SOL/USDC** is an advanced trend-following strategy for SOL perpetuals that fuses EMA/VWAP trend filters, on-chain net-flow analytics, exchange microstructure metrics (CVD, OI), and dynamic volatility regime estimation via GARCH(1,1). The system features robust data cleaning, execution cost modeling, and risk controls. Backtests from 2018–2025 show superior risk-adjusted returns versus a baseline EMA crossover.
 
 ## Architecture Diagram
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                BTC Perpetuals Strategy                               │
+│                                SOL/USDC Strategy                                     │
 ├──────────────────────────────────────────────────────────────────────────────────────┤
 │   Data Sources:                                                                      │
 │   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐                          │
@@ -71,7 +71,7 @@ btc_perpetuals/README.md
 │                 └─────┬─────┘        │                                               │
 │                       │              │                                               │
 │   ┌────────────────────▼──────────────────────────────────────────────────────────┐   │
-│   │                Agent Orchestrator (BTCPerpetualsStrategy)                    │   │
+│   │                Agent Orchestrator (SOLUSDCStrategy)                          │   │
 │   └────────────────────┬──────────────────────────────────────────────────────────┘   │
 │        │           │           │           │           │           │                 │
 │        ▼           ▼           ▼           ▼           ▼           ▼                 │
@@ -130,19 +130,19 @@ btc_perpetuals/README.md
 Import agents from the module:
 
 ```python
-from hummingbot.strategy.btc_perpetuals.agents import (
+from hummingbot.strategy.sol_usdc.agents import (
     EMACalculator, VWAPCalculator, OrderFlowAnalyzer,
     GARCHModel, ExecutionManager, PositionManager, RiskEvaluator
 )
 ```
 
-Each agent is modular and composable within the BTC Perpetuals orchestrator.
+Each agent is modular and composable within the SOL/USDC orchestrator.
 
 ### Running Simulations
 
 To run a simulation:
 ```bash
-python hummingbot/strategy/btc_perpetuals/train_btc_perpetuals.py --simulation --timesteps 10000
+python hummingbot/strategy/sol_usdc/train_sol_usdc.py --simulation --timesteps 10000
 ```
 
 ## Data & Preprocessing
@@ -167,7 +167,7 @@ python hummingbot/strategy/btc_perpetuals/train_btc_perpetuals.py --simulation -
 
 ## Backtest & Performance
 
-| Metric                | HYPE BTC-PERP | Baseline EMA50 |
+| Metric                | HYPE SOL/USDC | Baseline EMA50 |
 |-----------------------|---------------|----------------|
 | Ann. Return           | 35.2%         | 22.5%          |
 | Ann. Volatility       | 60.1%         | 55.0%          |
@@ -177,8 +177,8 @@ python hummingbot/strategy/btc_perpetuals/train_btc_perpetuals.py --simulation -
 | Avg. R:R              | 1.25          | 0.95           |
 | Trade Duration (days) | 9.4           | 11.2           |
 
-## Configuration (BTCPerpetualsConfig)
-- strategy: str (default="btc_perpetuals")
+## Configuration (SOLUSDCConfig)
+- strategy: str (default="sol_usdc")
 - exchange: str
 - trading_pair: str
 - leverage: int
@@ -201,9 +201,13 @@ python hummingbot/strategy/btc_perpetuals/train_btc_perpetuals.py --simulation -
 - Transaction Costs
 - Sharpe Ratio, Drawdown, Trade Duration
 
+## Raydium Integration
+
+The SOL/USDC strategy module leverages Raydium for data sourcing and execution. Raydium is a decentralized exchange (DEX) on the Solana blockchain, providing liquidity and trading capabilities for SOL/USDC pairs. The strategy utilizes Raydium's API to fetch OHLCV data, which is essential for trend analysis and signal generation. This integration allows the strategy to operate in a decentralized environment, ensuring robust and efficient trading execution.
+
 ---
 
-**Refer to BTC_Perpetuals.pdf for detailed algorithmic logic and agent design.**
+**Refer to SOL_USDC.pdf for detailed algorithmic logic and agent design.**
 
 ---
 
@@ -212,7 +216,7 @@ python hummingbot/strategy/btc_perpetuals/train_btc_perpetuals.py --simulation -
 ## Directory Structure
 
 ```
-hummingbot/strategy/btc_perpetuals/
+hummingbot/strategy/sol_usdc/
 ├── agents/
 │   ├── __init__.py
 │   ├── ema_calculator.py         # EMA(20), EMA(50) logic
@@ -222,11 +226,11 @@ hummingbot/strategy/btc_perpetuals/
 │   ├── execution_manager.py      # TWAP, slippage, funding P&L
 │   ├── position_manager.py       # Sizing, stop-loss, profit-taking
 │   └── risk_evaluator.py         # Drawdown, Sharpe, win rate
-├── btc_perpetuals_config.py      # Strategy configuration
-├── btc_perpetuals_env.py         # Environment and data handling
-├── btc_perpetuals_strategy.py    # Main strategy logic
-├── btc_perpetuals_system.py      # System-level orchestration
-├── train_btc_perpetuals.py       # Simulation and training entry point
+├── sol_usdc_config.py            # Strategy configuration
+├── sol_usdc_env.py               # Environment and data handling
+├── sol_usdc_strategy.py          # Main strategy logic
+├── sol_usdc_system.py            # System-level orchestration
+├── train_sol_usdc.py             # Simulation and training entry point
 ├── logs/
 │   ├── monitor.csv               # Step-by-step metrics
 │   ├── progress.csv              # Training progress
@@ -256,7 +260,7 @@ hummingbot/strategy/btc_perpetuals/
 
 ---
 
-## How to Run the BTC Perpetuals System Module
+## How to Run the SOL/USDC System Module
 
 ### 1. Clone the Repository
 ```bash
@@ -294,17 +298,17 @@ cd systemic-strategies
 
 ### 5. Run the System Module
 ```bash
-python3 -m hummingbot.strategy.btc_perpetuals.btc_perpetuals_system
+python3 -m hummingbot.strategy.sol_usdc.sol_usdc_system
 ```
 - This will start the backtest/simulation using the configuration and environment you set up.
 
 ### 6. Troubleshooting & Tips
-- If you see `ModuleNotFoundError: No module named 'hummingbot.strategy.btc_perpetuals'`, make sure you are in the `/systemic-strategies` directory and have activated the correct environment.
+- If you see `ModuleNotFoundError: No module named 'hummingbot.strategy.sol_usdc'`, make sure you are in the `/systemic-strategies` directory and have activated the correct environment.
 - If you get API errors, double-check your API keys and network connection.
 - For large data windows, the script may take a long time to fetch data. Start with a small date range for testing.
 
 ### 7. Output
-- Logs and results will be saved in `hummingbot/strategy/btc_perpetuals/logs/`.
+- Logs and results will be saved in `hummingbot/strategy/sol_usdc/logs/`.
 - Check `monitor.csv` and generated plots for results.
 
 ---
